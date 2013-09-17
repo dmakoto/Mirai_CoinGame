@@ -12,8 +12,8 @@ TSPS tspsReceiver;
 
 
 Floor floor;
-ArrayList<Coin> coins;
 
+ArrayList<Coin> coins;
 ArrayList deleteCoins;
 
 ArrayList<Star> stars;
@@ -39,6 +39,7 @@ int state  = 0;
 
 void setup(){
   
+  //initing for the projection size
   //size(800,600, P3D);
   size(1024,1536 , P3D);
   
@@ -67,24 +68,14 @@ void setup(){
   
   tspsReceiver= new TSPS(this, 12000);
   
-  PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
-  GL2  gl = pgl.beginPGL().gl.getGL2();
-  gl.glDisable(gl.GL_CULL_FACE);
-  gl.glEnable(gl.GL_DEPTH_TEST);
-  pgl.endPGL();
   
 }
 
 void draw(){
-  
-  PGraphicsOpenGL pgl = (PGraphicsOpenGL) g;
-  GL2  gl = pgl.beginPGL().gl.getGL2();
-  gl.glDisable(gl.GL_CULL_FACE);
-  gl.glEnable(gl.GL_DEPTH_TEST);
-  pgl.endPGL();
+
   
   if(keyPressed){
-    if(key == 'r') {
+    if(key == 'r') { //clear all the coins and play sound of game over
       coins.clear();
       if(myPort != null) {
         myPort.write('4');
@@ -92,28 +83,30 @@ void draw(){
         myPort.write('d');
       }
     }
-    else if(key == 'e') {
+    else if(key == 'e') { //refresh coins
       coins.clear();
       createCoinGrid(-2.5 + .75/4.0, 2.5+ .75/4.0, -4.5, 4.5, 1.1, 1.1);  
     }
-    else if(key == 's' && (state == 0)) {
+    else if(key == 's' && (state == 0)) { //setup star mode
       coins.clear();
       createRandomStars();      
     }
   }
   
   background(0,175,200);
+  
+  // put camera to the real projection position 
   camera(0.0, 10.0, 0.0, 
          0.0, -1.0, 0.0, 
          0.0, .0, -1.0);
-         
+       
     
   fill(255);
   
- 
+  //draw floor
   floor.drawFloor();
   
-  //players
+  //update players
    tspsReceiver.update();     
    for (Enumeration e = tspsReceiver.people.keys() ; e.hasMoreElements() ;)
   {
@@ -135,30 +128,26 @@ void draw(){
       
   };
   
-  
+  //get mouse pointer
   float[] mouseAtFloor = calcMousePointerAtFloor(mouseX, mouseY);
   
-//  pushMatrix();
-//  translate(mouseAtFloor[0],0,mouseAtFloor[1]);
-//  scale(.3,.3,.3);
-//  box(1.0);  
-//  popMatrix();
-  
-   //coin.drawCoin();
-  
+  //draw and update coins
   for(int i = 0; i < coins.size(); i++){
   
     coins.get(i).drawCoin();
+    
+    //detect collision with mouse
     if(coins.get(i).collided(mouseAtFloor[0], .75, mouseAtFloor[1])) {
       
+      //set get animation      
       coins.get(i).changeState(1);
-      //deleteCoins.add(i);
+
     }
     
+    //detect collision with persons
     for(int j = 0; j < personsX.size(); j++){
       if(coins.get(i).collided(((Float)personsX.get(j)).floatValue(), .75, ((Float)personsY.get(j)).floatValue())) {
         coins.get(i).changeState(1);
-        //deleteCoins.add(i);
       }
     }
     
@@ -169,20 +158,22 @@ void draw(){
   personsX.clear();
   personsY.clear();
   
+  //star animation end
   if((state == 1) && (millis() - initStarTime > starDuration)){
     stars.clear();
     createCoinGrid(-2.5 + .75/4.0, 2.5+ .75/4.0, -4.5, 4.5, 1.1, 1.1);  
     state = 0;
   }  
-  for(int i = 0; i < stars.size(); i++){
   
+  //draw and update stars if any on array
+  for(int i = 0; i < stars.size(); i++){
     stars.get(i).drawStar();
   }
   
-  int offSet = 0;
-  
+  // update coin animations after got
   for(int i = 0; i < coins.size(); i++){
   
+    //if animation end -> delete
     if(coins.get(i).getState() == 2){
       coins.remove(i);
       i--;
@@ -200,6 +191,7 @@ void draw(){
 
 }
 
+//detect mouse/person position and reproject to floor plane
 float[] calcMousePointerAtFloor(float posX, float posY){
 
   float[] mousePointer = new float[2];
@@ -219,6 +211,7 @@ float[] calcMousePointerAtFloor(float posX, float posY){
       
 }
 
+//create grid positioned coins
 void createCoinGrid(float minX, float maxX, float minZ, float maxZ, float stepX, float stepZ){
 
   for( float i = minX; i < maxX; i+= stepX){
@@ -231,6 +224,7 @@ void createCoinGrid(float minX, float maxX, float minZ, float maxZ, float stepX,
   
 }
 
+//random star creation
 void createRandomStars(){
   
   if(myPort != null) {
